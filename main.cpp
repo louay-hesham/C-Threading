@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <chrono>
+#include <future>
+
 
 using namespace std;
 
@@ -137,27 +139,37 @@ int *merge_ar(int n1, int* ar1, int n2, int* ar2) {
 }
 
 
-int *sort_ar(int n, int* ar) {
+void sort_ar(int n, int* ar, promise<int*> && merged) {
     if (n == 1) {
-        return ar;
+        merged.set_value(ar);
+        return;
     }
     int n1 = n / 2;
     int n2 = n - n1;
-    int* ar1 = sort_ar(n1, ar);
-    int* ar2 = sort_ar(n2, ar + n1);
-    return merge_ar(n1, ar1, n2, ar2);
+    promise<int*> p1, p2;
+    auto f1 = p1.get_future();
+    auto f2 = p2.get_future();
+    thread* t1 = new thread(&sort_ar, n1, ar, move(p1));
+    thread* t2 = new thread(&sort_ar, n2, ar + n1, move(p2));
+    t1->join();
+    t2->join();
+    merged.set_value(merge_ar(n1, f1.get(), n2, f2.get()));
 }
 
 void mergeSort() {
     freopen("input.txt","r",stdin);
     int n;
     cin >> n;
-    int ar[n];
+    int* ar = (int*)malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         cin >> ar[i];
     }
     auto start = std::chrono::high_resolution_clock::now();
-    int* sorted_ar = sort_ar(n, ar);
+    promise<int*> p;
+    auto f = p.get_future();
+    thread* t = new thread(&sort_ar, n, ar, move(p));
+    t->join();
+    int* sorted_ar = f.get();
     auto finish = std::chrono::high_resolution_clock::now();
     freopen("output.txt", "w", stdout);
     for(int i = 0; i < n; i++) {
