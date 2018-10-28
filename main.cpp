@@ -1,5 +1,6 @@
 #include <iostream>
-#include <cstdio>
+#include <stdio.h>
+#include <stdlib.h>
 #include <thread>
 #include <pthread.h>
 #include <unistd.h>
@@ -109,8 +110,60 @@ void matrixMultiply() {
     matrixMultiplyRow(n1, m1, matrix1, n2, m2, matrix2);
 }
 
-void mergeSort() {
+int *merge_ar(int n1, int* ar1, int n2, int* ar2) {
+    int i = 0, j = 0, k = 0;
+    int* sorted_array = (int*)malloc((n1 + n2) * sizeof(int));
+    while ((i < n1) && (j < n2)) {
+        if (ar1[i] < ar2[j]) {
+            *(sorted_array + k) = ar1[i];
+            i++;
+        } else {
+            *(sorted_array + k) = ar2[j];
+            j++;
+        }
+        k++;
+    }
+    while (i < n1) {
+        *(sorted_array + k) = ar1[i];
+        i++;
+        k++;
+    }
+    while (j < n2) {
+        *(sorted_array + k) = ar2[j];
+        j++;
+        k++;
+    }
+    return sorted_array;
+}
 
+
+int *sort_ar(int n, int* ar) {
+    if (n == 1) {
+        return ar;
+    }
+    int n1 = n / 2;
+    int n2 = n - n1;
+    int* ar1 = sort_ar(n1, ar);
+    int* ar2 = sort_ar(n2, ar + n1);
+    return merge_ar(n1, ar1, n2, ar2);
+}
+
+void mergeSort() {
+    freopen("input.txt","r",stdin);
+    int n;
+    cin >> n;
+    int ar[n];
+    for (int i = 0; i < n; i++) {
+        cin >> ar[i];
+    }
+    auto start = std::chrono::high_resolution_clock::now();
+    int* sorted_ar = sort_ar(n, ar);
+    auto finish = std::chrono::high_resolution_clock::now();
+    freopen("output.txt", "w", stdout);
+    for(int i = 0; i < n; i++) {
+        cout << sorted_ar[i] << "\t";
+    }
+    cout << endl << "Time elapsed: " << chrono::duration_cast<chrono::nanoseconds>(finish-start).count() << " nanoseconds" << endl;
 }
 
 int main() {
